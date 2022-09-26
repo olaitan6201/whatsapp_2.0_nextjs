@@ -4,7 +4,7 @@ import { initializeApp } from "firebase/app";
 import { getAuth, signInWithPopup, GoogleAuthProvider } from "firebase/auth";
 import { 
     collection, addDoc, doc, setDoc, Timestamp,
-    getFirestore, getDocs
+    getFirestore, getDocs, query, where
 } from "firebase/firestore"; 
 
 // Your web app's Firebase configuration
@@ -57,6 +57,30 @@ export const updateUser = async (ref, user) => {
     } catch (e) {
         // console.error("Error adding document: ", e);
         return null
+    }
+}
+
+
+export const addChat = async (email, user) => {
+    try {
+        console.log('Gotten here');
+        //chat already exist
+        const q = query(collection(db, "chats"), where("users", "array-contains", user.email));
+        const querySnapshot = await getDocs(q);
+        console.log(querySnapshot.data());
+        const chatExists = !!querySnapshot?.find((chat) => 
+            chat.data().users.find(user => user === email)?.length > 0
+        );
+
+        if(chatExists) return false
+
+        //add new chat
+        const docRef = await addDoc(collection(db, "chats"), {
+            users: [user.email, email]
+        });
+        return true
+    } catch (e) {
+        return false
     }
 }
 

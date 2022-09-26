@@ -1,7 +1,11 @@
 // Import the functions you need from the SDKs you need
 import { initializeApp } from "firebase/app";
-import { getFirestore, collection, getDocs } from 'firebase/firestore/lite';
+// import {  } from 'firebase/firestore/lite';
 import { getAuth, signInWithPopup, GoogleAuthProvider } from "firebase/auth";
+import { 
+    collection, addDoc, doc, setDoc, Timestamp,
+    getFirestore, getDocs
+} from "firebase/firestore"; 
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -37,6 +41,23 @@ export const signInWithGoogle = async () => {
 
 export const signOut = async () => {
     // try{}
+}
+
+export const updateUser = async (ref, user) => {
+    try {
+        const docData = {
+            email: user.email,
+            lastSeen: Timestamp.fromDate(new Date()),
+            photoURL: user.photoURL
+        }
+        
+        let res = await setDoc(doc(db, "users", ref), docData, { merge: true });
+        return res;
+        // console.log("Document written with ID: ", docRef.id);
+    } catch (e) {
+        // console.error("Error adding document: ", e);
+        return null
+    }
 }
 
 export { db, auth, provider }

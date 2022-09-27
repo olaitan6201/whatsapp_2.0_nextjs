@@ -63,16 +63,17 @@ export const updateUser = async (ref, user) => {
 
 export const addChat = async (email, user) => {
     try {
-        console.log('Gotten here');
+        // console.log('Gotten here');
         //chat already exist
         const q = query(collection(db, "chats"), where("users", "array-contains", user.email));
         const querySnapshot = await getDocs(q);
-        console.log(querySnapshot.data());
-        const chatExists = !!querySnapshot?.find((chat) => 
-            chat.data().users.find(user => user === email)?.length > 0
-        );
+        // console.log(querySnapshot.data());
 
-        if(chatExists) return false
+        querySnapshot.forEach((doc) => {
+            const exists = !!(doc.data().users.find(user => user === email)?.length > 0)
+            // console.log(exists);
+            if(exists) return false
+        })
 
         //add new chat
         const docRef = await addDoc(collection(db, "chats"), {
@@ -81,6 +82,56 @@ export const addChat = async (email, user) => {
         return true
     } catch (e) {
         return false
+    }
+}
+
+export const getChats = async (user) => {
+    try {
+        const q = query(collection(db, "chats"), where("users", "array-contains", user.email));
+        const querySnapshot = await getDocs(q);
+        // console.log(querySnapshot.data());
+
+        return querySnapshot
+    } catch (e) {
+        return []
+    }
+}
+
+export const loadChats = async (user) => {
+    try {
+        let res = await getChats(user)
+        if(!res) return []
+
+        let data = [];
+        res.forEach((chat) => {
+            // console.log(chat.id);
+            data.push({
+                id: chat.id,
+                data: chat.data()
+            });
+        })
+
+        return data.slice();
+
+    } catch (error) {
+        return []
+    }
+} 
+
+export const getUser = async (email) => {
+    try {
+        const q = query(collection(db, "users"), where("email", "==", email));
+        // const q = doc(db, "users", email);
+        const docRef = await getDocs(q);
+
+        const data = null
+
+        await docRef.forEach((doc) => data = doc.data())
+
+        // console.log(data.photoURL);
+        return data
+    } catch (error) {
+        return null
     }
 }
 

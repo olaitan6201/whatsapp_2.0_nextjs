@@ -4,10 +4,6 @@ import styled from "styled-components"
 import { signInWithGoogle } from "../firebase"
 
 function Login(){
-    const signIn = async () => {
-        let res = await signInWithGoogle();
-        console.log(res);
-    }
 
     return (
         <Container>
@@ -17,7 +13,7 @@ function Login(){
 
             <LoginContainer>
                 <Logo src="https://assets.stickpng.com/images/580b57fcd9996e24bc43c543.png"/>
-                <Button variant="outlined" onClick={signIn}>Sign In With Google</Button>
+                <Button variant="outlined" onClick={signInWithGoogle}>Sign In With Google</Button>
             </LoginContainer>
         </Container>
     )

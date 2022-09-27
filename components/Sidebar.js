@@ -4,29 +4,39 @@ import ChatIcon from '@material-ui/icons/Chat'
 import MoreVertIcon from '@material-ui/icons/MoreVert'
 import SearchIcon from "@material-ui/icons/Search"
 import * as EmailValidator from 'email-validator'
-import { auth, addChat } from "../firebase"
+import { auth, addChat, loadChats } from "../firebase"
 import { useAuthState } from 'react-firebase-hooks/auth'
+import { useEffect, useState } from "react"
+import Chat from "./Chat"
 
 function Sidebar() {
 
     const [user] = useAuthState(auth)
+    const [data, setData] = useState(null)
+    const [isLoading, setLoading] = useState(false)
 
     const createChat = () => {
-        // console.log('We\'re here!');
         const input = prompt('Please enter the user email address:')
-        alert(input);
         if (!input) return false
         if(!EmailValidator.validate(input) && input === user.email) return false
-        console.log('validated');
+        
         //Add chat to db
-
-        addChat(input, user).catch(res => console.log(res));
+        addChat(input, user);
     }
+
+    useEffect(()=>{
+        setLoading(true)
+        loadChats(user)
+            .then((res)=>{
+                setData({chats: res})
+                setLoading(false)
+            })
+    }, [user])
 
     return (
         <Container>
             <Header>
-                <UserAvatar onClick={() => auth.signOut()} />
+                <UserAvatar onClick={() => auth.signOut()} src={user?.photoURL} />
 
                 <IconsContainer>
                     <IconButton>
@@ -45,7 +55,12 @@ function Sidebar() {
 
             <SidebarButton onClick={createChat}>Start a new chat</SidebarButton>
 
+            {/* {[1,2,3].map((num) => <p>{num}</p>)} */}
             {/* List of Chats */}
+            {isLoading && <p>Loading...</p>}
+            {!isLoading && data?.chats && data?.chats?.map((chat) => 
+                <Chat key={chat.id} id={chat.id} users={chat.data.users} />
+            )}
         </Container>
     )
 }

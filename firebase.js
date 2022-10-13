@@ -4,7 +4,7 @@ import { initializeApp } from "firebase/app";
 import { getAuth, signInWithPopup, GoogleAuthProvider } from "firebase/auth";
 import { 
     collection, addDoc, doc, setDoc, Timestamp,
-    getFirestore, getDocs, query, where
+    getFirestore, getDocs, query, where, getDoc, updateDoc, orderBy, onSnapshot
 } from "firebase/firestore"; 
 
 // Your web app's Firebase configuration
@@ -63,7 +63,6 @@ export const updateUser = async (ref, user) => {
 
 export const addChat = async (email, user) => {
     try {
-        // console.log('Gotten here');
         //chat already exist
         const q = query(collection(db, "chats"), where("users", "array-contains", user.email));
         const querySnapshot = await getDocs(q);
@@ -97,6 +96,21 @@ export const getChats = async (user) => {
     }
 }
 
+export const getChat = async (id) => {
+    try {
+        const docRef = doc(db, "chats", id);
+        const docSnap = await getDoc(docRef);
+
+        if (!docSnap.exists()) return null;
+        const data = docSnap.data()
+        // console.log(data);
+        return data;
+    } catch (e) {
+        // console.log(e);
+        return null
+    }
+}
+
 export const loadChats = async (user) => {
     try {
         let res = await getChats(user)
@@ -126,12 +140,72 @@ export const getUser = async (email) => {
 
         const data = null
 
-        await docRef.forEach((doc) => data = doc.data())
+        await docRef.forEach((doc) => data = doc?.data())
 
         // console.log(data.photoURL);
         return data
     } catch (error) {
         return null
+    }
+}
+
+
+export const addMessage = async (user, message, chat_id) => {
+    try {
+        await updateDoc(doc(db, "users", user.uid), {
+            lastSeen: Timestamp.fromDate(new Date())
+        }, { merge: true })
+
+        await addDoc(collection(db, "messages"), {
+            timestamp: Timestamp.fromDate(new Date()),
+            message: message,
+            chat_id: chat_id,
+            user: user.email,
+            photoURL: user.photoURL
+        })
+
+        return true
+    } catch (error) {
+        return false
+    }
+}
+
+
+export const fetchMessages = async (user, chat_id) => {
+    try {
+        await updateDoc(doc(db, "users", user.uid), {
+            lastSeen: Timestamp.fromDate(new Date())
+        }, { merge: true })
+        
+        const q = query(
+            collection(db, "messages"), 
+            where("chat_id", "==", chat_id),
+            // orderBy('timestamp', 'asc')
+        );
+
+        let messages = [];
+        
+        const unsubscribe = await onSnapshot(q, (querySnapshot) => {
+            querySnapshot.forEach((message) => {
+                if(messages.filter(msg => msg.id === message.id).length === 0)
+                messages.push({
+                    id: message.id,
+                    ...message.data(),
+                    timestamp: message.data().timestamp?.toDate().getTime()
+                });
+            })
+        });
+
+        // const querySnapshot = await getDocs(q);
+
+        // querySnapshot.forEach(doc => console.log(doc.data()))
+        // return querySnapshot
+
+        return messages;
+
+    } catch (error) {
+        // console.log(error);
+        return []
     }
 }
 
